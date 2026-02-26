@@ -12,10 +12,10 @@ This project is an IoT gateway system with two components:
 **Architecture:**
 
 ```
-┌──────────────┐       MQTT (broker.hivemq.com)       ┌──────────────────┐
+┌──────────────┐             MQTT broker               ┌──────────────────┐
 │  ESP32       │◄─────────────────────────────────────►│  Sensor Device   │
 │  Gateway     │   jrpc/connect/request                │  (Python or real │
-│              │   jrpc/gateway/rx                      │   ESP32 sensor)  │
+│              │   jrpc/gateway/rx                     │   ESP32 sensor)  │
 │  Port 80:    │   jrpc/devices/{id}/rx                └──────────────────┘
 │  Dashboard   │
 │  + WebSocket │◄──── Browser (real-time dashboard)
