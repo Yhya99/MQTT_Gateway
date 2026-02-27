@@ -1,6 +1,13 @@
 #ifndef __GATEWAY_PRIVATE__H_
 #define __GATEWAY_PRIVATE__H_
 
+#include <Arduino.h>
+#include "mongoose.h"
+#include "../gateway_config.h"
+#include "gateway_utils.h"
+#include <WiFi.h>
+#include "dashboard.h"
+
 extern struct mg_mgr         gw_mgr;
 extern struct mg_connection *gw_mqtt_conn;
 
