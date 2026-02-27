@@ -116,8 +116,8 @@ void gw_handle_gateway_rx(struct mg_str payload) {
     r.req_data = NULL;
     r.frame    = payload;
     mg_rpc_process(&r);
-
-    gw_mqtt_publish(respTopic.c_str(), io.buf);
+    
+    gw_mqtt_publish(respTopic.c_str(), (const char *)io.buf);
 
     free(io.buf);
     free(deviceId);
