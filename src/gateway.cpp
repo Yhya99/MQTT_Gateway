@@ -1,10 +1,6 @@
 #include "gateway.h"
 #include "gateway_private.h"
-#include "gateway_utils.h"
-#include "../gateway_config.h"
-#include <WiFi.h>
-#include "mongoose.h"
-#include "dashboard.h"
+
 
 struct mg_mgr         gw_mgr;
 struct mg_connection *gw_mqtt_conn = nullptr;
