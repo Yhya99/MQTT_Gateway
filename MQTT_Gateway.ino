@@ -10,6 +10,6 @@ gateway_init();
 void loop()
 {
 
-void gateway_poll();
+gateway_poll();
 
 }

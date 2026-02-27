@@ -20,10 +20,8 @@ void gateway_init(){
   gw_setup_wifi();
   // Initialize Mongoose event manager
   mg_mgr_init(&gw_mgr);
-  
   //RPC Methods
   mg_rpc_add(&gw_rpc_head, mg_str("ping"),        gw_rpc_ping,        NULL);
-  
   // MQTT reconnection timer — runs every 3s, starts immediately
   mg_timer_add(&gw_mgr, GW_MQTT_RECONNECT_MS, MG_TIMER_REPEAT | MG_TIMER_RUN_NOW, gw_mqtt_timer_fn, &gw_mgr);
 }
@@ -46,6 +44,8 @@ void gw_mqtt_publish(const char *topic, const char *payload, size_t len) {
   opts.message = mg_str_n(payload, len);
   opts.qos     = 1;
   opts.retain  = false;
+  Serial.printf("puplishing");
+  Serial.printf(payload);
   mg_mqtt_pub(gw_mqtt_conn, &opts);
 }
 
@@ -128,9 +128,8 @@ void gw_handle_gateway_rx(struct mg_str payload) {
 // ─────────────────────────────────────────────
 void gw_mqtt_timer_fn(void *arg) {
   struct mg_mgr *m = (struct mg_mgr *)arg;
-
   if (gw_mqtt_conn != NULL) return;  // Already connected
-
+ 
   char url[128];
   mg_snprintf(url, sizeof(url), "mqtt://%s:%d", GW_MQTT_BROKER, GW_MQTT_PORT);
 
