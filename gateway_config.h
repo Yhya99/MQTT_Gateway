@@ -1,6 +1,8 @@
 #ifndef __GATEWAY_CONFIG__H_
 #define __GATEWAY_CONFIG__H_
 
+#define MG_DEBUG 1
+
 // ── WiFi ──────────────────────────────────────
 #define GW_WIFI_SSID       "Galaxy A53 5GD5E1"
 #define GW_WIFI_PASSWORD   "1234567888*"

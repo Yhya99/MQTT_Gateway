@@ -2,7 +2,7 @@
 
 void setup()
 {
-
+gateway_init();
 
 }
 
@@ -10,6 +10,6 @@ void setup()
 void loop()
 {
 
-
+void gateway_poll();
 
 }
