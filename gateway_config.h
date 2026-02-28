@@ -13,7 +13,7 @@
 #define GW_GATEWAY_ID      "gateway_01"
 
 // ── MQTT Topics ───────────────────────────────
-#define GW_T_GATEWAY_TX    "jrpc/gateway/tx"
+#define GW_T_GATEWAY_CONNECT    "jrpc/gateway/connect"
 #define GW_T_GATEWAY_RX    "jrpc/gateway/rx"
 
 // ── Timing ────────────────────────────────────
