@@ -24,7 +24,7 @@ static String safeString(const char* str) {
 // GatewayCore implementation
 // -------------------------------------------------------------------
 GatewayCore::GatewayCore() : m_mqttConn(nullptr), m_rpcHead(nullptr) {
-  mg_mgr_init(&m_mgr);
+
   Serial.println("GatewayCore constructed");
 }
 
@@ -37,7 +37,7 @@ void GatewayCore::begin() {
   Serial.begin(115200);
   delay(500);
   Serial.println("\n\n--- GatewayCore begin ---");
-
+  mg_mgr_init(&m_mgr);
   Serial.printf("Connecting to WiFi '%s'", GW_WIFI_SSID);
   WiFi.mode(WIFI_STA);
   WiFi.begin(GW_WIFI_SSID, GW_WIFI_PASSWORD);
@@ -491,8 +491,39 @@ bool GatewayCore::authorizeDevice(const String& id, const char* psk) {
   plain[decLen] = '\0';
   Serial.printf("Decrypted inner: %s\n", plain);
 
-  // Parse inner JSON
+  // ── Auth signature verification ─────────────────────────────────────────
+  // The inner JSON must contain "timestamp", "method":"request_connect", and
+  // "auth" (HMAC-SHA256 hex).  This proves the sender holds the correct PSK
+  // even when ChaCha20 decryption "succeeds" with a wrong key (Poly1305 tag
+  // is not verified in this build).
   struct mg_str inner = mg_str((char*)plain);
+  char* authHex  = mg_json_get_str(inner, "$.auth");
+  char* authMeth = mg_json_get_str(inner, "$.method");
+  long  authTs   = (long)mg_json_get_long(inner, "$.timestamp", 0);
+
+  bool authOk = false;
+  if (authHex && authMeth && authTs != 0) {
+    // Optional freshness check (requires NTP; disable by setting AUTH_TS_WINDOW to 0)
+    // #define AUTH_TS_WINDOW 300   // ±5 minutes
+    // long now = (long)time(nullptr);
+    // long skew = authTs - now;
+    // if (skew < 0) skew = -skew;
+    // if (AUTH_TS_WINDOW > 0 && skew > AUTH_TS_WINDOW) {
+    //   Serial.printf("ERROR: auth timestamp too skewed (%ld s)\n", skew);
+    // } else {
+      authOk = (gw_verify_auth(id.c_str(), authTs, authMeth, authHex, key) == 1);
+    // }
+  }
+  free(authHex); free(authMeth);
+
+  if (!authOk) {
+    Serial.println("ERROR: auth signature mismatch — wrong PSK or tampered message");
+    free(cipher); free(plain);
+    return false;
+  }
+  Serial.println("Auth signature verified ✓");
+  // ────────────────────────────────────────────────────────────────────────
+
   char* deviceName = mg_json_get_str(inner, "$.device_name");
   char* deviceType = mg_json_get_str(inner, "$.device_type");
 
@@ -623,6 +654,38 @@ void GatewayCore::handleGatewayRx(struct mg_str payload) {
   }
   plain[decLen] = '\0';
   Serial.printf("Decrypted: %s\n", plain);
+
+  // ── Auth signature verification ─────────────────────────────────────────
+  // Every RX message must contain "timestamp" and "auth" in addition to the
+  // standard JSON-RPC fields.  "method" is the JSON-RPC method field.
+  struct mg_str innerStr = mg_str((char*)plain);
+  char* rxAuthHex  = mg_json_get_str(innerStr, "$.auth");
+  char* rxMethod   = mg_json_get_str(innerStr, "$.method");
+  long  rxAuthTs   = (long)mg_json_get_long(innerStr, "$.timestamp", 0);
+
+  bool rxAuthOk = false;
+  if (rxAuthHex && rxMethod && rxAuthTs != 0) {
+    // long now = (long)time(nullptr);
+    // long skew = rxAuthTs - now;
+    // if (skew < 0) skew = -skew;
+    // if (AUTH_TS_WINDOW > 0 && skew > AUTH_TS_WINDOW) {
+    //   Serial.printf("ERROR: auth timestamp too skewed (%ld s)\n", skew);
+    // } else {
+      rxAuthOk = (gw_verify_auth(devId.c_str(), rxAuthTs, rxMethod,
+                                 rxAuthHex, dev.enc_key) == 1);
+    // }
+  }
+  free(rxAuthHex); free(rxMethod);
+
+  if (!rxAuthOk) {
+    Serial.println("ERROR: auth signature mismatch — rejecting message");
+    sendError(devId, "Auth failed");
+    free(cipher); free(plain);
+    free(deviceId); free(nonceHex); free(cipherHex);
+    return;
+  }
+  Serial.println("Auth signature verified ✓");
+  // ────────────────────────────────────────────────────────────────────────
 
   // Replay protection
   uint32_t counter = (nonce[0] << 24) | (nonce[1] << 16) | (nonce[2] << 8) | nonce[3];
