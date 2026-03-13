@@ -372,7 +372,7 @@ void GatewayCore::handleGatewayConnect(struct mg_str payload) {
   char* cipherHex = mg_json_get_str(payload, "$.ciphertext");
 
   if (!nonceHex || !cipherHex) {
-    Serial.println("ERROR: missing nonce or ciphertext");
+    Serial.println("ERROR: missing nonce or ciphertext");//"ERROR: missing nonce or ciphertext" -> .rowdata 
     free(deviceId);
     free(nonceHex);
     free(cipherHex);
@@ -770,4 +770,34 @@ void GatewayCore::addDevice(const String& id, const String& name, const String& 
   dev.status = DEV_PENDING;
   m_devices[id] = dev;
   if (m_eventCb) m_eventCb(id, DEVICE_ADDED);
+}
+
+// -------------------------------------------------------------------
+// Delete helpers (called from dashboard)
+// -------------------------------------------------------------------
+bool GatewayCore::deleteDevice(const String& id) {
+  auto it = m_devices.find(id);
+  if (it == m_devices.end()) {
+    Serial.printf("deleteDevice: device %s not found\n", id.c_str());
+    return false;
+  }
+  m_devices.erase(it);
+  removeDevice(id);                          // delete LittleFS file
+  if (m_eventCb) m_eventCb(id, DEVICE_REMOVED);
+  Serial.printf("Deleted device %s\n", id.c_str());
+  return true;
+}
+
+void GatewayCore::deleteAllDevices() {
+  // Collect IDs first to avoid invalidating the iterator inside the loop
+  std::vector<String> ids;
+  ids.reserve(m_devices.size());
+  for (auto& pair : m_devices) ids.push_back(pair.first);
+
+  for (auto& id : ids) {
+    m_devices.erase(id);
+    removeDevice(id);
+    if (m_eventCb) m_eventCb(id, DEVICE_REMOVED);
+  }
+  Serial.printf("Deleted all %d devices\n", (int)ids.size());
 }

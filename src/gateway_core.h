@@ -1,5 +1,5 @@
-#ifndef GATEWAY_CORE_H
-#define GATEWAY_CORE_H
+#ifndef __GATEWAY_CORE_H
+#define __GATEWAY_CORE_H
 
 #include <Arduino.h>
 #include <map>
@@ -22,6 +22,8 @@ public:
   void denyDevice(const String& id);
   void addDevice(const String& id, const String& name, const String& type);
   bool authorizeDevice(const String& id, const char* psk);
+  bool deleteDevice(const String& id);      // remove one device from memory + flash
+  void deleteAllDevices();                  // remove every device from memory + flash
 
   void publishToDevice(const String& deviceId, const char* payload, size_t len);
   void publishToDevice(const String& deviceId, const String& payload) {
